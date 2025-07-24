@@ -62,9 +62,10 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Dependency Injection
-builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<VisionService>();
-builder.Services.AddScoped<AIService>();
+builder.Services.AddHttpClient<GeminiService>();
+builder.Services.AddSingleton<JwtService>();
+builder.Services.AddSingleton<VisionService>();
+builder.Services.AddSingleton<AIService>();
 
 // Controllers & Swagger
 builder.Services.AddControllers();

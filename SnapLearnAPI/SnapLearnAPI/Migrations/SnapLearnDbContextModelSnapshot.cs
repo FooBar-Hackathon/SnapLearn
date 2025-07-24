@@ -22,6 +22,170 @@ namespace SnapLearnAPI.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SnapLearnAPI.Models.LevelOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchId");
+
+                    b.ToTable("LevelOption");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Match", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PlayerQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuestionQuantity")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Match");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Object", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClassLabel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<float>("Confidence")
+                        .HasColumnType("real");
+
+                    b.Property<int>("ImageHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ImageWidth")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("X")
+                        .HasColumnType("real");
+
+                    b.Property<float>("Y")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Object");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Player", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchId");
+
+                    b.HasIndex("ObjectId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Player");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Point", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RightAnswers")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SpeedPosition")
+                        .HasColumnType("integer");
+
+                    b.Property<float>("XpGained")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("Point");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.QA", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectId");
+
+                    b.ToTable("QA");
+                });
+
             modelBuilder.Entity("SnapLearnAPI.Models.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -45,6 +209,50 @@ namespace SnapLearnAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Session", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Winner")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchId");
+
+                    b.ToTable("Session");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Summary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectId");
+
+                    b.ToTable("Summary");
                 });
 
             modelBuilder.Entity("SnapLearnAPI.Models.User", b =>
@@ -92,9 +300,6 @@ namespace SnapLearnAPI.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("ProfilPath")
-                        .HasColumnType("text");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
@@ -123,6 +328,10 @@ namespace SnapLearnAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ProfilePicPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
@@ -133,15 +342,194 @@ namespace SnapLearnAPI.Migrations
                     b.ToTable("UserConfigs");
                 });
 
+            modelBuilder.Entity("SnapLearnAPI.Models.WinInfo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Streak3")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Streak6")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Streak8")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<float>("WinRate")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WinInfo");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.LevelOption", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.Match", "Match")
+                        .WithMany("LevelOptions")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Player", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.Match", "Match")
+                        .WithMany("Players")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SnapLearnAPI.Models.Object", "Object")
+                        .WithMany("Players")
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SnapLearnAPI.Models.Session", "Session")
+                        .WithMany("Players")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SnapLearnAPI.Models.User", "User")
+                        .WithMany("Players")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+
+                    b.Navigation("Object");
+
+                    b.Navigation("Session");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Point", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.Player", "Player")
+                        .WithMany("Points")
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SnapLearnAPI.Models.Session", "Session")
+                        .WithMany("Points")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.QA", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.Object", "Object")
+                        .WithMany("QAs")
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Object");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Session", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.Match", "Match")
+                        .WithMany("Sessions")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Summary", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.Object", "Object")
+                        .WithMany("Summaries")
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Object");
+                });
+
             modelBuilder.Entity("SnapLearnAPI.Models.UserConfig", b =>
                 {
                     b.HasOne("SnapLearnAPI.Models.User", "User")
-                        .WithMany()
+                        .WithMany("UserConfigs")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.WinInfo", b =>
+                {
+                    b.HasOne("SnapLearnAPI.Models.User", "User")
+                        .WithMany("WinInfos")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Match", b =>
+                {
+                    b.Navigation("LevelOptions");
+
+                    b.Navigation("Players");
+
+                    b.Navigation("Sessions");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Object", b =>
+                {
+                    b.Navigation("Players");
+
+                    b.Navigation("QAs");
+
+                    b.Navigation("Summaries");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Player", b =>
+                {
+                    b.Navigation("Points");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.Session", b =>
+                {
+                    b.Navigation("Players");
+
+                    b.Navigation("Points");
+                });
+
+            modelBuilder.Entity("SnapLearnAPI.Models.User", b =>
+                {
+                    b.Navigation("Players");
+
+                    b.Navigation("UserConfigs");
+
+                    b.Navigation("WinInfos");
                 });
 #pragma warning restore 612, 618
         }
