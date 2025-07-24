@@ -20,6 +20,22 @@ namespace SnapLearnAPI.Services
             _expiryMinutes = int.TryParse(config["Jwt:ExpiryMinutes"], out var min) ? min : 30;
         }
 
+        public string GenerateRefreshToken()
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_secret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(),
+                Expires = DateTime.UtcNow.AddDays(7),
+                Issuer = _issuer,
+                Audience = _audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
         public string GenerateToken(Guid userId, string deviceId)
         {
             var claims = new List<Claim>

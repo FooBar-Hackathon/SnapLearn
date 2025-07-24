@@ -1,39 +1,80 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
+using Npgsql;
+using SnapLearnAPI.Models;
+using SnapLearnAPI.Contexts;
+using SnapLearnAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
 var config = builder.Configuration;
 
+// Setup PostgreSQL with retry logic
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(config.GetConnectionString("DefaultConnection"));
+dataSourceBuilder.EnableDynamicJson();
+var dataSource = dataSourceBuilder.Build();
+
+builder.Services.AddDbContext<SnapLearnDbContext>(options =>
+    options.UseNpgsql(dataSource, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: null
+        );
+    })
+    .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
+    .EnableDetailedErrors(builder.Environment.IsDevelopment())
+);
+
+// Configure Identity
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+})
+.AddEntityFrameworkStores<SnapLearnDbContext>()
+.AddDefaultTokenProviders();
+
+// Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-
 })
 .AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = config["Jwt:Issuer"],
-            ValidAudience = config["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]))
-        };
-    }); ;
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = config["Jwt:Issuer"],
+        ValidAudience = config["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]))
+    };
+});
 
+// Dependency Injection
+builder.Services.AddHttpClient<GeminiService>();
+builder.Services.AddSingleton<JwtService>();
+builder.Services.AddSingleton<VisionService>();
+builder.Services.AddSingleton<AIService>();
+
+// Controllers & Swagger
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -42,6 +83,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
