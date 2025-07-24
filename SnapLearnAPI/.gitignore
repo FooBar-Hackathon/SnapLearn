@@ -1,0 +1,113 @@
+# This file is based on the standard template provided by `dotnet new gitignore`.
+
+## User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015 cache/options directory
+.vs/
+# Visual Studio 2017 cache/options directory
+.vs.sln.swp
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+*.dotcover
+*.pidb
+*.svclog
+*.trx
+
+# Dotnet Local Tools
+.store/
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb.meta
+*.pdb.meta
+*.opendb
+*.VC.db
+
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+# Uncomment if you are using Paket
+# **/paket.dependencies
+# .paket/paket.bootstrapper.exe
+# paket-files/
+
+# Roslyn files
+*.ruleset
+
+# Cache files
+*.cache
+*.cache.cs
+
+# Fakes
+Generated\/
+
+# F#
+*.fs.swp
+
+# App settings that may contain secrets
+appsettings.Development.json
+secrets.json
+*.Secret.*.json
+
+# Certificates
+*.pfx
+*.key
+
+# Other
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
