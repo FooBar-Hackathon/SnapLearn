@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SnapLearnAPI.Contexts;
 using SnapLearnAPI.Models;
 using SnapLearnAPI.Repositories;
 
@@ -9,15 +10,15 @@ namespace SnapLearnAPI.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly UserRepository _userRepository;
         private readonly ILogger<UserController> _logger;
         private readonly UserManager<User> _userManager;
+        private readonly SnapLearnContext _snapLearnContext;
 
-        public UserController(UserRepository userRepository, UserManager<User> userManager, ILogger<UserController> logger)
+        public UserController(SnapLearnContext snapLearnContext,UserManager<User> userManager, ILogger<UserController> logger)
         {
-            _logger = logger;
+            _snapLearnContext = snapLearnContext;
             _userManager = userManager;
-            _userRepository = userRepository;
+            _logger = logger;
         }
 
         [HttpGet("user-profile")]
@@ -26,7 +27,7 @@ namespace SnapLearnAPI.Controllers
 
             var currentUser = await _userManager.GetUserAsync(User);
 
-            var userProfile = await _userRepository.GetUserProfileAsync(currentUser.Id);
+            var userProfile = await _snapLearnContext.Users.FindAsync(currentUser.Id);
             
             if (userProfile == null)
             {
@@ -35,8 +36,6 @@ namespace SnapLearnAPI.Controllers
 
             return Ok(new { userProfile.Id, userProfile.UserName, userProfile.Email, userProfile.ProfilPath, userProfile.Exp, userProfile.Level });
         }
-
-
 
     }
 }
