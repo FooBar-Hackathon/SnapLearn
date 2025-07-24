@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SnapLearnAPI.Contexts;
 using SnapLearnAPI.Models;
-using SnapLearnAPI.Repositories;
 
 namespace SnapLearnAPI.Controllers
 {
@@ -10,15 +9,13 @@ namespace SnapLearnAPI.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly ILogger<UserController> _logger;
         private readonly UserManager<User> _userManager;
-        private readonly SnapLearnContext _snapLearnContext;
+        private readonly SnapLearnDbContext _snapLearnContext;
 
-        public UserController(SnapLearnContext snapLearnContext,UserManager<User> userManager, ILogger<UserController> logger)
+        public UserController(SnapLearnDbContext snapLearnContext,UserManager<User> userManager)
         {
             _snapLearnContext = snapLearnContext;
             _userManager = userManager;
-            _logger = logger;
         }
 
         [HttpGet("user-profile")]

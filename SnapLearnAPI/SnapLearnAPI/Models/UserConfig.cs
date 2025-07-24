@@ -5,6 +5,7 @@ namespace SnapLearnAPI.Models
 {
     public class UserConfig
     {
+        [Key]
         public Guid Id { get; set; }
 
         [ForeignKey("User")]
