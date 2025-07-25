@@ -5,6 +5,7 @@ import 'leaderboard_screen.dart';
 import 'profile_screen.dart';
 import 'battle_screen.dart';
 import '../services/api_service.dart';
+import 'package:lottie/lottie.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -256,8 +257,19 @@ class _HomeTab extends StatelessWidget {
     final int streak8 = dashboard?['streak8'] ?? 0;
     final int winCount = dashboard?['winCount'] ?? 0;
     final double winRate = (dashboard?['winRate'] ?? 0).toDouble();
+    final int quizzesTaken = dashboard?['quizzesTaken'] ?? 0;
+    final int battlesPlayed = dashboard?['battlesPlayed'] ?? 0;
+    final int longestStreak = dashboard?['longestStreak'] ?? 0;
+    final int totalXP = dashboard?['totalXP'] ?? 0;
     final List quizzes = dashboard?['recentQuizzes'] ?? [];
     final List battles = dashboard?['recentBattles'] ?? [];
+    final List badges =
+        dashboard?['badges'] ??
+        [
+          {'icon': Icons.star, 'label': 'Starter'},
+          {'icon': Icons.emoji_events, 'label': 'Winner'},
+          {'icon': Icons.flash_on, 'label': 'Streak'},
+        ];
     // XP for next level (3x per level)
     final double nextLevelXp =
         100 *
@@ -265,187 +277,429 @@ class _HomeTab extends StatelessWidget {
             ? 1
             : List.generate(level, (i) => i).fold(1.0, (a, b) => a * 3));
     final double xpProgress = (xp / nextLevelXp).clamp(0.0, 1.0);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 36,
-                backgroundImage: (profilePic != null && profilePic.isNotEmpty)
-                    ? NetworkImage(profilePic)
-                    : null,
-                backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                child: (profilePic == null || profilePic.isEmpty)
-                    ? Icon(
-                        Icons.person,
-                        size: 36,
-                        color: theme.colorScheme.primary,
-                      )
-                    : null,
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(18, 20, 18, 100),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Top Banner/Carousel
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Welcome,', style: theme.textTheme.labelLarge),
-                    Text(
-                      userName,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Row(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.military_tech,
-                          color: Colors.green,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
                         Text(
-                          'Level $level',
-                          style: theme.textTheme.titleMedium,
+                          '🔥 Daily Challenge',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Complete a quiz and earn bonus XP!',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Lottie.asset(
+                    'assets/animations/xp_increase.json',
+                    width: 60,
+                    height: 60,
+                    repeat: true,
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // XP Progress Bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'XP: ${xp.toStringAsFixed(0)} / ${nextLevelXp.toStringAsFixed(0)}',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: xpProgress,
-                  minHeight: 10,
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          // Quick Stats (Streaks, Wins, Win Rate) - horizontally scrollable
-          SizedBox(
-            height: 130,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              physics: BouncingScrollPhysics(),
+            ),
+            const SizedBox(height: 20),
+            // Quick Actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const SizedBox(width: 4),
-                StatCard(
-                  label: 'Streak 3',
-                  value: streak3.toString(),
-                  icon: Icons.local_fire_department,
-                  color: Colors.orange,
-                ),
-                StatCard(
-                  label: 'Streak 6',
-                  value: streak6.toString(),
-                  icon: Icons.whatshot,
-                  color: Colors.red,
-                ),
-                StatCard(
-                  label: 'Streak 8',
-                  value: streak8.toString(),
-                  icon: Icons.flash_on,
-                  color: Colors.amber,
-                ),
-                StatCard(
-                  label: 'Wins',
-                  value: winCount.toString(),
-                  icon: Icons.emoji_events,
-                  color: Colors.green,
-                ),
-                StatCard(
-                  label: 'Win Rate',
-                  value: '${(winRate * 100).toStringAsFixed(1)}%',
-                  icon: Icons.percent,
+                _QuickAction(
+                  icon: Icons.quiz,
+                  label: 'Quiz',
                   color: Colors.blue,
+                  onTap: () {},
                 ),
-                const SizedBox(width: 4),
+                _QuickAction(
+                  icon: Icons.sports_kabaddi,
+                  label: 'Battle',
+                  color: Colors.red,
+                  onTap: () {},
+                ),
+                _QuickAction(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Scan',
+                  color: Colors.green,
+                  onTap: () {},
+                ),
+                _QuickAction(
+                  icon: Icons.leaderboard,
+                  label: 'Ranks',
+                  color: Colors.amber,
+                  onTap: () {},
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 32),
-          Divider(thickness: 1, height: 32),
-          // Recent Quizzes
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Recent Quizzes',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+            // Profile + Level + Badges
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundImage: (profilePic != null && profilePic.isNotEmpty)
+                      ? NetworkImage(profilePic)
+                      : null,
+                  backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                  child: (profilePic == null || profilePic.isEmpty)
+                      ? Icon(
+                          Icons.person,
+                          size: 32,
+                          color: theme.colorScheme.primary,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Welcome,', style: theme.textTheme.labelLarge),
+                      Text(
+                        userName,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.military_tech,
+                            color: Colors.green,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Level $level',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Badges
+                Row(
+                  children: badges
+                      .map<Widget>(
+                        (b) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Tooltip(
+                            message: b['label'],
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: theme.colorScheme.primary
+                                  .withOpacity(0.15),
+                              child: Icon(
+                                b['icon'] as IconData,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // XP Progress Bar with Lottie
+            Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: xpProgress,
+                    minHeight: 12,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                Positioned(
+                  left: (xpProgress * MediaQuery.of(context).size.width * 0.7)
+                      .clamp(0, MediaQuery.of(context).size.width - 40),
+                  child: Lottie.asset(
+                    'assets/animations/xp_increase.json',
+                    width: 32,
+                    height: 32,
+                    repeat: true,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            // More StatCards
+            SizedBox(
+              height: 130,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: BouncingScrollPhysics(),
+                children: [
+                  const SizedBox(width: 4),
+                  StatCard(
+                    label: 'Streak 3',
+                    value: streak3.toString(),
+                    icon: Icons.local_fire_department,
+                    color: Colors.orange,
+                  ),
+                  StatCard(
+                    label: 'Streak 6',
+                    value: streak6.toString(),
+                    icon: Icons.whatshot,
+                    color: Colors.red,
+                  ),
+                  StatCard(
+                    label: 'Streak 8',
+                    value: streak8.toString(),
+                    icon: Icons.flash_on,
+                    color: Colors.amber,
+                  ),
+                  StatCard(
+                    label: 'Wins',
+                    value: winCount.toString(),
+                    icon: Icons.emoji_events,
+                    color: Colors.green,
+                  ),
+                  StatCard(
+                    label: 'Win Rate',
+                    value: '${(winRate * 100).toStringAsFixed(1)}%',
+                    icon: Icons.percent,
+                    color: Colors.blue,
+                  ),
+                  StatCard(
+                    label: 'Quizzes',
+                    value: quizzesTaken.toString(),
+                    icon: Icons.quiz,
+                    color: Colors.purple,
+                  ),
+                  StatCard(
+                    label: 'Battles',
+                    value: battlesPlayed.toString(),
+                    icon: Icons.sports_kabaddi,
+                    color: Colors.redAccent,
+                  ),
+                  StatCard(
+                    label: 'Longest Streak',
+                    value: longestStreak.toString(),
+                    icon: Icons.timeline,
+                    color: Colors.teal,
+                  ),
+                  StatCard(
+                    label: 'Total XP',
+                    value: totalXP.toString(),
+                    icon: Icons.star,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 4),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ...quizzes.map<Widget>(
-            (q) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: _ActivityTile(
-                  icon: Icons.quiz,
-                  title: q['topic'] ?? '-',
-                  subtitle: 'Difficulty: ${q['difficulty'] ?? '-'}',
-                  date: q['date'],
+            const SizedBox(height: 18),
+            Divider(thickness: 1, height: 24),
+            // Recent Quizzes
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Recent Quizzes',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ),
-          if (quizzes.isEmpty)
-            Text('No recent quizzes.', style: theme.textTheme.bodySmall),
-          const SizedBox(height: 32),
-          Divider(thickness: 1, height: 32),
-          // Recent Battles
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Recent Battles',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 8),
+            ...quizzes.map<Widget>(
+              (q) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Card(
+                  color: theme.colorScheme.primary.withOpacity(0.07),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: ListTile(
+                    leading: Icon(Icons.quiz, color: theme.colorScheme.primary),
+                    title: Text(
+                      q['topic'] ?? '-',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    subtitle: Row(
+                      children: [
+                        Chip(
+                          label: Text(q['difficulty'] ?? '-'),
+                          backgroundColor: theme.colorScheme.secondary
+                              .withOpacity(0.15),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('Score: ${q['score'] ?? '-'}'),
+                      ],
+                    ),
+                    trailing: FilledButton(
+                      onPressed: () {},
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(40, 36),
+                      ),
+                      child: const Text('Review'),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ...battles.map<Widget>(
-            (b) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            if (quizzes.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                alignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'No recent quizzes found.',
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
-                child: _ActivityTile(
-                  icon: Icons.sports_kabaddi,
-                  title: b['topic'] ?? '-',
-                  subtitle: 'Result: ${b['result'] ?? '-'}',
-                  date: b['date'],
+              ),
+            const SizedBox(height: 18),
+            Divider(thickness: 1, height: 24),
+            // Recent Battles
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Recent Battles',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ),
-          if (battles.isEmpty)
-            Text('No recent battles.', style: theme.textTheme.bodySmall),
-        ],
+            const SizedBox(height: 8),
+            ...battles.map<Widget>(
+              (b) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Card(
+                  color: theme.colorScheme.secondary.withOpacity(0.07),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.sports_kabaddi,
+                      color: theme.colorScheme.secondary,
+                    ),
+                    title: Text(
+                      b['topic'] ?? '-',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    subtitle: Row(
+                      children: [
+                        Chip(
+                          label: Text(b['result'] ?? '-'),
+                          backgroundColor: theme.colorScheme.primary
+                              .withOpacity(0.15),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('XP: ${b['xp'] ?? '-'}'),
+                      ],
+                    ),
+                    trailing: FilledButton(
+                      onPressed: () {},
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(40, 36),
+                      ),
+                      child: const Text('Review'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (battles.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                alignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'No recent battles.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 68,
+        height: 68,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.13),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 6),
+            Text(label, style: Theme.of(context).textTheme.labelMedium),
+          ],
+        ),
       ),
     );
   }
