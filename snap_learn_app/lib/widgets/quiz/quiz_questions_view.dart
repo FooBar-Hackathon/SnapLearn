@@ -153,19 +153,6 @@ class _QuizQuestionsViewState extends State<QuizQuestionsView> {
                   ],
                 ),
               ),
-              if (allAnswered)
-                FilledButton(
-                  onPressed: widget.submitting
-                      ? null
-                      : _showDoneCheckmarkAndSubmit,
-                  child: widget.submitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(),
-                        )
-                      : const Text('Submit'),
-                ),
             ],
           ),
         ),
@@ -196,6 +183,17 @@ class _QuizQuestionsViewState extends State<QuizQuestionsView> {
             },
           ),
         ),
+        if (allAnswered)
+          FilledButton(
+            onPressed: widget.submitting ? null : _showDoneCheckmarkAndSubmit,
+            child: widget.submitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(),
+                  )
+                : const Text('Submit'),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
