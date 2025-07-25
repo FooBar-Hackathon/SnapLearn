@@ -65,7 +65,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddHttpClient<GeminiService>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<VisionService>();
-builder.Services.AddSingleton<AIService>();
+builder.Services.AddTransient<AIService>();
 
 // Controllers & Swagger
 builder.Services.AddControllers();

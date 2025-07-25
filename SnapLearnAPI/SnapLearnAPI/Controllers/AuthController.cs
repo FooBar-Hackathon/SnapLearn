@@ -72,6 +72,7 @@ namespace SnapLearnAPI.Controllers
             {
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
+                ProfilePicPath = "", // Default to empty string or a default image path
                 Language = request.Language,
                 AiPersonality = "friendly"
             };
@@ -93,13 +94,13 @@ namespace SnapLearnAPI.Controllers
                 return BadRequest(new { error = "Invalid input.", details = ModelState });
             var user = await _snapLearnContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null)
-                return BadRequest(new { error = $"User with the email {request.Email} not found!" });
+                return Unauthorized(new { error = "Invalid Email /Password." });
 
             // Use ASP.NET Identity's password verification
             var dbUser = await _userManager.FindByEmailAsync(request.Email);
             var isValid = dbUser != null && await _userManager.CheckPasswordAsync(dbUser, request.Password);
             if (!isValid)
-                return Unauthorized(new { error = "Invalid password." });
+                return Unauthorized(new { error = "Invalid Email /Password." });
 
             var deviceId = Guid.NewGuid().ToString();
             var token = _jwtService.GenerateToken(user.Id, deviceId);

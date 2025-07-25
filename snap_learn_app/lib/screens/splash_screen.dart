@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'auth_screen.dart';
+import 'package:snap_learn_app/services/api_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,7 +14,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  bool _fadeOut = false;
+  final bool _fadeOut = false;
 
   @override
   void initState() {
@@ -24,21 +25,25 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
-    Timer(const Duration(seconds: 2), () async {
-      setState(() => _fadeOut = true);
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 600),
-            pageBuilder: (_, __, ___) => const AuthScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-      }
-    });
+    _startApp();
+  }
+
+  Future<void> _startApp() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    final isValid = await ApiService.checkTokenValidity();
+    if (!mounted) return;
+    if (isValid) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const AuthScreen(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
+    }
   }
 
   @override

@@ -6,11 +6,46 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SnapLearnAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class AddBattleEntities : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Battles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Topic = table.Column<string>(type: "text", nullable: false),
+                    Difficulty = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    WinnerId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Battles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DetectedObject",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Label = table.Column<string>(type: "text", nullable: false),
+                    ImagePath = table.Column<string>(type: "text", nullable: false),
+                    ImageWidth = table.Column<int>(type: "integer", nullable: false),
+                    ImageHeight = table.Column<int>(type: "integer", nullable: false),
+                    Confidence = table.Column<double>(type: "double precision", nullable: false),
+                    X = table.Column<float>(type: "real", nullable: false),
+                    Y = table.Column<float>(type: "real", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DetectedObject", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Match",
                 columns: table => new
@@ -23,24 +58,6 @@ namespace SnapLearnAPI.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Match", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Object",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ClassLabel = table.Column<string>(type: "text", nullable: false),
-                    ImagePath = table.Column<string>(type: "text", nullable: false),
-                    ImageWidth = table.Column<int>(type: "integer", nullable: false),
-                    ImageHeight = table.Column<int>(type: "integer", nullable: false),
-                    Confidence = table.Column<float>(type: "real", nullable: false),
-                    X = table.Column<float>(type: "real", nullable: false),
-                    Y = table.Column<float>(type: "real", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Object", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -86,6 +103,45 @@ namespace SnapLearnAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "QA",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Question = table.Column<string>(type: "text", nullable: false),
+                    Answer = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_QA", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_QA_DetectedObject_ObjectId",
+                        column: x => x.ObjectId,
+                        principalTable: "DetectedObject",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Summary",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Summary", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Summary_DetectedObject_ObjectId",
+                        column: x => x.ObjectId,
+                        principalTable: "DetectedObject",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LevelOption",
                 columns: table => new
                 {
@@ -125,40 +181,28 @@ namespace SnapLearnAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "QA",
+                name: "BattlePlayers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Question = table.Column<string>(type: "text", nullable: false),
-                    Answer = table.Column<string>(type: "text", nullable: false)
+                    BattleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Score = table.Column<int>(type: "integer", nullable: false),
+                    IsReady = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_QA", x => x.Id);
+                    table.PrimaryKey("PK_BattlePlayers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_QA_Object_ObjectId",
-                        column: x => x.ObjectId,
-                        principalTable: "Object",
+                        name: "FK_BattlePlayers_Battles_BattleId",
+                        column: x => x.BattleId,
+                        principalTable: "Battles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Summary",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Content = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Summary", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Summary_Object_ObjectId",
-                        column: x => x.ObjectId,
-                        principalTable: "Object",
+                        name: "FK_BattlePlayers_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -222,15 +266,15 @@ namespace SnapLearnAPI.Migrations
                 {
                     table.PrimaryKey("PK_Player", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Player_Match_MatchId",
-                        column: x => x.MatchId,
-                        principalTable: "Match",
+                        name: "FK_Player_DetectedObject_ObjectId",
+                        column: x => x.ObjectId,
+                        principalTable: "DetectedObject",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Player_Object_ObjectId",
-                        column: x => x.ObjectId,
-                        principalTable: "Object",
+                        name: "FK_Player_Match_MatchId",
+                        column: x => x.MatchId,
+                        principalTable: "Match",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -274,6 +318,16 @@ namespace SnapLearnAPI.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BattlePlayers_BattleId",
+                table: "BattlePlayers",
+                column: "BattleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BattlePlayers_UserId",
+                table: "BattlePlayers",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LevelOption_MatchId",
@@ -340,6 +394,9 @@ namespace SnapLearnAPI.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "BattlePlayers");
+
+            migrationBuilder.DropTable(
                 name: "LevelOption");
 
             migrationBuilder.DropTable(
@@ -361,10 +418,13 @@ namespace SnapLearnAPI.Migrations
                 name: "WinInfo");
 
             migrationBuilder.DropTable(
+                name: "Battles");
+
+            migrationBuilder.DropTable(
                 name: "Player");
 
             migrationBuilder.DropTable(
-                name: "Object");
+                name: "DetectedObject");
 
             migrationBuilder.DropTable(
                 name: "Session");

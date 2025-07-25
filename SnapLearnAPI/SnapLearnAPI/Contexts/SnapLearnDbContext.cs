@@ -17,5 +17,8 @@ namespace SnapLearnAPI.Contexts
         public DbSet<User> Users { get; set; }
         public DbSet<UserConfig> UserConfigs { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Battle> Battles { get; set; }
+        public DbSet<BattlePlayer> BattlePlayers { get; set; }
+        public DbSet<QuizEntity> Quizzes { get; set; }
     }
 }

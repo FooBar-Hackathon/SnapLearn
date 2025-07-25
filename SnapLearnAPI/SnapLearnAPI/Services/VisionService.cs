@@ -24,6 +24,7 @@ namespace SnapLearnAPI.Services
                 OnnxModel = modelPath,
                 ImageResize = ImageResize.Proportional,
                 Cuda = false,
+               
                 //PrimeGpu = true,
                 //GpuId = 0,
             });
@@ -70,9 +71,38 @@ namespace SnapLearnAPI.Services
                 Y = r.BoundingBox.Top,
                 ImageWidth = r.BoundingBox.Width,
                 ImageHeight = r.BoundingBox.Height,
+            }).ToList();
+        }
 
+        public (List<DetectedObject> objects, MemoryStream drawnImage) DetectAndDrawCombined(Stream imageStream)
+        {
+            imageStream.Position = 0;
+            using var image = SKBitmap.Decode(imageStream);
 
-            }).Cast<DetectedObject>().ToList();
+            var results = _yolo.RunObjectDetection(image, confidence: Constants.CONFIDENCE_THRESHOLD, iou: 0.7);
+
+            // Draw on a copy to avoid mutating the original if needed
+            using var drawn = image.Copy();
+            drawn.Draw(results);
+
+            // Encode the drawn image
+            using var data = drawn.Encode(SKEncodedImageFormat.Png, 100);
+            var outputStream = new MemoryStream();
+            data.SaveTo(outputStream);
+            outputStream.Position = 0;
+
+            // Convert results to DetectedObject list
+            var detectedObjects = results.Select(r => new DetectedObject
+            {
+                Label = r.Label.Name,
+                Confidence = r.Confidence,
+                X = r.BoundingBox.Left,
+                Y = r.BoundingBox.Top,
+                ImageWidth = r.BoundingBox.Width,
+                ImageHeight = r.BoundingBox.Height,
+            }).ToList();
+
+            return (detectedObjects, outputStream);
         }
 
         public async Task<string> ExtractTextAsync(Stream imageStream, string language = "eng")

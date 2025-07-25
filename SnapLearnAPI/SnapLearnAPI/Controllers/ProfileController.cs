@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace SnapLearnAPI.Controllers
 {
@@ -25,15 +26,14 @@ namespace SnapLearnAPI.Controllers
         }
 
         /// <summary>
-        /// Get a user's profile by userId
+        /// Get the current user's profile (from JWT)
         /// </summary>
-        /// <param name="userId">User's GUID</param>
-        /// <returns>Profile DTO</returns>
         [HttpGet]
-        public async Task<IActionResult> GetProfile([FromQuery][Required] string userId)
+        public async Task<IActionResult> GetProfile()
         {
-            if (!Guid.TryParse(userId, out var guid))
-                return BadRequest(new { error = "Invalid userId format." });
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var guid))
+                return Unauthorized(new { error = "Invalid or missing user claim." });
 
             var user = await _db.Users
                 .AsNoTracking()
@@ -41,7 +41,7 @@ namespace SnapLearnAPI.Controllers
                 .FirstOrDefaultAsync(u => u.Id == guid);
             if (user == null)
             {
-                _logger.LogWarning("Profile not found for userId {UserId}", userId);
+                _logger.LogWarning("Profile not found for userId {UserId}", userIdClaim);
                 return NotFound(new { error = "User not found." });
             }
             var userConfig = user.UserConfigs?.FirstOrDefault();
@@ -49,6 +49,7 @@ namespace SnapLearnAPI.Controllers
             {
                 UserName = user.UserName,
                 Xp = user.Exp,
+                Email = user.Email,
                 Level = user.Level,
                 ProfilePicPath = userConfig?.ProfilePicPath,
                 AiPersonality = userConfig?.AiPersonality,
@@ -58,7 +59,7 @@ namespace SnapLearnAPI.Controllers
         }
 
         /// <summary>
-        /// Update a user's profile
+        /// Update the current user's profile (from JWT)
         /// </summary>
         [HttpPost("update")]
         public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateRequest req)
@@ -66,8 +67,9 @@ namespace SnapLearnAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(new { error = "Invalid input.", details = ModelState });
 
-            if (!Guid.TryParse(req.UserId, out var guid))
-                return BadRequest(new { error = "Invalid userId format." });
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var guid))
+                return Unauthorized(new { error = "Invalid or missing user claim." });
 
             var user = await _db.Users.Include(u => u.UserConfigs).FirstOrDefaultAsync(u => u.Id == guid);
             if (user == null) return NotFound(new { error = "User not found." });
@@ -80,7 +82,7 @@ namespace SnapLearnAPI.Controllers
             userConfig.AiPersonality = req.AiPersonality;
             userConfig.Language = req.Language;
             await _db.SaveChangesAsync();
-            _logger.LogInformation("Profile updated for userId {UserId}", req.UserId);
+            _logger.LogInformation("Profile updated for userId {UserId}", userIdClaim);
             return Ok(new { success = true });
         }
     }
@@ -93,6 +95,7 @@ namespace SnapLearnAPI.Controllers
         public string UserName { get; set; }
         public float Xp { get; set; }
         public int Level { get; set; }
+        public string Email { get; set; }
         public string ProfilePicPath { get; set; }
         public string AiPersonality { get; set; }
         public string Language { get; set; }
@@ -103,8 +106,8 @@ namespace SnapLearnAPI.Controllers
     /// </summary>
     public class ProfileUpdateRequest
     {
-        [Required]
-        public string UserId { get; set; }
+        // [Required] // No longer needed, userId comes from JWT
+        // public string UserId { get; set; }
         public string AiPersonality { get; set; }
         public string Language { get; set; }
     }

@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
-using SnapLearnAPI.Services;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
+using SnapLearnAPI.Contexts;
+using SnapLearnAPI.Models;
+using SnapLearnAPI.Models.Requests;
+using SnapLearnAPI.Services;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace SnapLearnAPI.Controllers
 {
@@ -17,24 +22,55 @@ namespace SnapLearnAPI.Controllers
     {
         private readonly AIService _aiService;
         private readonly ILogger<BattleController> _logger;
-        public BattleController(AIService aiService, ILogger<BattleController> logger)
+        private readonly SnapLearnDbContext _db;
+        public BattleController(AIService aiService, ILogger<BattleController> logger, SnapLearnDbContext db)
         {
             _aiService = aiService;
             _logger = logger;
+            _db = db;
         }
 
         /// <summary>
         /// Start a new battle (generate quiz)
         /// </summary>
-        [HttpPost("start")]
-        public async Task<IActionResult> StartBattle([FromBody] BattleStartRequest req)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(new { error = "Invalid input.", details = ModelState });
-            var quiz = await _aiService.GenerateQuizAsync(req.Topic, req.Difficulty);
-            _logger.LogInformation("Battle started for user {UserId}, topic {Topic}, difficulty {Difficulty}", req.UserId, req.Topic, req.Difficulty);
-            return Ok(new { battleId = Guid.NewGuid().ToString(), quiz });
-        }
+        //[HttpPost("start")]
+        //public async Task<IActionResult> StartBattle([FromBody] BattleStartRequest req)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(new { error = "Invalid input.", details = ModelState });
+
+        //    // Create battle in DB
+        //    var battle = new Battle
+        //    {
+        //        Id = Guid.NewGuid(),
+        //        Topic = req.Topic,
+        //        Difficulty = req.Difficulty,
+        //        Status = "waiting",
+        //        StartTime = DateTime.UtcNow,
+        //        Players = new List<BattlePlayer>()
+        //    };
+        //    var player = new BattlePlayer
+        //    {
+        //        Id = Guid.NewGuid(),
+        //        BattleId = battle.Id,
+        //        UserId = Guid.Parse(req.UserId),
+        //        Score = 0,
+        //        IsReady = false
+        //    };
+        //    battle.Players.Add(player);
+        //    _db.Battles.Add(battle);
+        //    _db.BattlePlayers.Add(player);
+        //    await _db.SaveChangesAsync();
+
+        //    // Generate quiz for the battle
+        //    var quiz = await _aiService.GenerateQuizAsync(new QuizGenerationRequest {
+        //        Topic = req.Topic,
+        //        Difficulty = req.Difficulty,
+        //        QuestionCount = 5 // or configurable
+        //    });
+        //    _logger.LogInformation("Battle started for user {UserId}, topic {Topic}, difficulty {Difficulty}", req.UserId, req.Topic, req.Difficulty);
+        //    return Ok(new { battleId = battle.Id, quiz });
+        //}
 
         /// <summary>
         /// Submit battle answers for evaluation
@@ -44,12 +80,16 @@ namespace SnapLearnAPI.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(new { error = "Invalid input.", details = ModelState });
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var guid))
+                return Unauthorized(new { error = "Invalid or missing user claim." });
+
             var result = await _aiService.EvaluateQuizAsync(new QuizSubmission {
-                UserId = req.UserId,
                 Answers = req.Answers,
                 Difficulty = req.Difficulty
             });
-            _logger.LogInformation("Battle answers submitted for user {UserId}", req.UserId);
+            _logger.LogInformation("Battle answers submitted for user {UserId}", userIdClaim);
             return Ok(result);
         }
 
@@ -85,8 +125,6 @@ namespace SnapLearnAPI.Controllers
     {
         [Required]
         public string BattleId { get; set; }
-        [Required]
-        public string UserId { get; set; }
         [Required]
         public List<UserAnswer> Answers { get; set; }
         [Required]

@@ -253,41 +253,95 @@ class _LoginFormState extends State<LoginForm> {
   Timer? _errorTimer;
 
   Future<void> _login() async {
+    // Validate inputs first
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _error = 'Please fill in all fields';
+        _showError = true;
+      });
+      _errorTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _showError = false);
+      });
+      return;
+    }
+
+    // Check network connection
+
     setState(() {
       _loading = true;
       _error = null;
       _showError = false;
       _errorTimer?.cancel();
     });
+
     try {
       final result = await ApiService.login(
         _emailController.text.trim(),
         _passwordController.text,
-      );
+      ).timeout(const Duration(seconds: 30));
+
+      if (result['token'] == null) {
+        throw Exception('Invalid server response - missing token');
+      }
+
       final storage = const FlutterSecureStorage();
-      await storage.write(key: 'token', value: result['token']);
-      await storage.write(key: 'refreshToken', value: result['refreshToken']);
-      await storage.write(key: 'deviceId', value: result['deviceId']);
+      await Future.wait([
+        storage.write(key: 'token', value: result['token']),
+        storage.write(key: 'refreshToken', value: result['refreshToken']),
+        if (result['deviceId'] != null)
+          storage.write(key: 'deviceId', value: result['deviceId']),
+      ]);
+
+      // Fetch user data
+      try {
+        final profile = await ApiService.getProfile();
+        if (profile == null) {
+          throw Exception('Failed to fetch user profile');
+        }
+      } catch (e) {
+        debugPrint('Profile fetch error: $e');
+        // Continue even if profile fetch fails - we can retry later
+      }
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
-      _AuthScreenState.setHasLoggedIn();
+      await _AuthScreenState.setHasLoggedIn();
+    } on TimeoutException {
+      setState(() {
+        _error = 'Connection timeout. Please try again.';
+        _showError = true;
+      });
+    } on FormatException {
+      setState(() {
+        _error = 'Invalid server response format';
+        _showError = true;
+      });
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
+        if (_error!.contains('SocketException') ||
+            _error!.contains('Network is unreachable')) {
+          _error = 'Network error. Please check your connection.';
+        }
         _showError = true;
       });
-      _errorTimer = Timer(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _showError = false);
-      });
     } finally {
-      setState(() {
-        _loading = false;
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+
+      _errorTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) setState(() => _showError = false);
       });
     }
   }
 
   @override
   void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
     _errorTimer?.cancel();
     super.dispose();
   }
@@ -304,12 +358,24 @@ class _LoginFormState extends State<LoginForm> {
               padding: const EdgeInsets.only(bottom: 16),
               child: MaterialBanner(
                 backgroundColor: theme.colorScheme.errorContainer,
-                content: Text(
-                  _error!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onErrorContainer,
-                    fontWeight: FontWeight.w600,
-                  ),
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Login Failed',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _error!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ],
                 ),
                 actions: [
                   IconButton(
@@ -322,7 +388,7 @@ class _LoginFormState extends State<LoginForm> {
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 4,
+                  vertical: 8,
                 ),
               ),
             ),
@@ -341,6 +407,7 @@ class _LoginFormState extends State<LoginForm> {
             ),
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 18),
           TextField(
@@ -358,11 +425,9 @@ class _LoginFormState extends State<LoginForm> {
             ),
             obscureText: true,
             autofillHints: const [AutofillHints.password],
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _login(),
           ),
-          if (_error != null) ...[
-            const SizedBox(height: 16),
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-          ],
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
@@ -384,6 +449,27 @@ class _LoginFormState extends State<LoginForm> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Login'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: _loading
+                ? null
+                : () {
+                    // Add forgot password functionality
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Password reset functionality coming soon!',
+                        ),
+                      ),
+                    );
+                  },
+            child: Text(
+              'Forgot password?',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
             ),
           ),
         ],
@@ -410,44 +496,83 @@ class _RegisterFormState extends State<RegisterForm> {
   Timer? _errorTimer;
 
   Future<void> _register() async {
+    // Validate inputs first
+    if (_usernameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      setState(() {
+        _error = 'Please fill in all fields';
+        _showError = true;
+      });
+      _errorTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _showError = false);
+      });
+      return;
+    }
+
+    // Check network connection
+
     setState(() {
       _loading = true;
       _error = null;
       _showError = false;
       _errorTimer?.cancel();
     });
+
     try {
       final result = await ApiService.register(
         _usernameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text,
         _selectedLanguage,
-      );
-      final storage = const FlutterSecureStorage();
-      // Registration returns only username, so prompt user to login
+      ).timeout(const Duration(seconds: 30));
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful! Please login.')),
+        const SnackBar(
+          content: Text('Registration successful! Please login.'),
+          duration: Duration(seconds: 3),
+        ),
       );
       DefaultTabController.of(context).animateTo(0);
-      _AuthScreenState.setHasLoggedIn();
+      await _AuthScreenState.setHasLoggedIn();
+    } on TimeoutException {
+      setState(() {
+        _error = 'Connection timeout. Please try again.';
+        _showError = true;
+      });
+    } on FormatException {
+      setState(() {
+        _error = 'Invalid server response format';
+        _showError = true;
+      });
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
+        if (_error!.contains('SocketException') ||
+            _error!.contains('Network is unreachable')) {
+          _error = 'Network error. Please check your connection.';
+        }
         _showError = true;
       });
-      _errorTimer = Timer(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _showError = false);
-      });
     } finally {
-      setState(() {
-        _loading = false;
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+
+      _errorTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) setState(() => _showError = false);
       });
     }
   }
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _errorTimer?.cancel();
     super.dispose();
   }
@@ -464,12 +589,24 @@ class _RegisterFormState extends State<RegisterForm> {
               padding: const EdgeInsets.only(bottom: 16),
               child: MaterialBanner(
                 backgroundColor: theme.colorScheme.errorContainer,
-                content: Text(
-                  _error!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onErrorContainer,
-                    fontWeight: FontWeight.w600,
-                  ),
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Registration Failed',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _error!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ],
                 ),
                 actions: [
                   IconButton(
@@ -482,7 +619,7 @@ class _RegisterFormState extends State<RegisterForm> {
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 4,
+                  vertical: 8,
                 ),
               ),
             ),
@@ -500,6 +637,7 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
             ),
             autofillHints: const [AutofillHints.username],
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 18),
           TextField(
@@ -517,6 +655,7 @@ class _RegisterFormState extends State<RegisterForm> {
             ),
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 18),
           TextField(
@@ -534,6 +673,7 @@ class _RegisterFormState extends State<RegisterForm> {
             ),
             obscureText: true,
             autofillHints: const [AutofillHints.newPassword],
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 18),
           DropdownButtonFormField<String>(
@@ -552,7 +692,7 @@ class _RegisterFormState extends State<RegisterForm> {
             items: const [
               DropdownMenuItem(value: 'eng', child: Text('EN')),
               DropdownMenuItem(value: 'ind', child: Text('ID')),
-              DropdownMenuItem(value: 'chi_sim', child: Text('CN Simpfied')),
+              DropdownMenuItem(value: 'chi_sim', child: Text('CN Simplified')),
               DropdownMenuItem(value: 'chi_tra', child: Text('CN Traditional')),
               DropdownMenuItem(value: 'jpn', child: Text('JP')),
             ],
@@ -560,7 +700,6 @@ class _RegisterFormState extends State<RegisterForm> {
               if (val != null) setState(() => _selectedLanguage = val);
             },
           ),
-
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,

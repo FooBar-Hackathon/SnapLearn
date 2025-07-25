@@ -14,13 +14,13 @@ namespace SnapLearnAPI.Controllers
             _aiService = aiService;
         }
 
-        [HttpGet("facts")]
-        public async Task<IActionResult> GetFacts([FromQuery] string topic)
-        {
-            if (string.IsNullOrWhiteSpace(topic))
-                return BadRequest("Topic is required.");
-            var facts = await _aiService.GenerateFactsAsync(topic);
-            return Ok(new { topic, facts });
-        }
+        //[HttpGet("facts")]
+        //public async Task<IActionResult> GetFacts([FromQuery] string topic)
+        //{
+        //    if (string.IsNullOrWhiteSpace(topic))
+        //        return BadRequest("Topic is required.");
+        //    var facts = await _aiService.GenerateFactsAsync(topic);
+        //    return Ok(new { topic, facts });
+        //}
     }
 } 

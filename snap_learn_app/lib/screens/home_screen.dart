@@ -37,40 +37,125 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      body: SafeArea(child: _pages[_selectedIndex]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
-        height: 70,
-        backgroundColor: theme.colorScheme.surface,
-        indicatorColor: theme.colorScheme.primary.withOpacity(0.1),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+        child: PhysicalModel(
+          color: Colors.transparent,
+          elevation: 8,
+          borderRadius: BorderRadius.circular(32),
+          shadowColor: theme.colorScheme.primary.withOpacity(0.18),
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavBarItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  selected: _selectedIndex == 0,
+                  onTap: () => _onItemTapped(0),
+                  theme: theme,
+                ),
+                _NavBarItem(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Camera',
+                  selected: _selectedIndex == 1,
+                  onTap: () => _onItemTapped(1),
+                  theme: theme,
+                ),
+                _NavBarItem(
+                  icon: Icons.sports_kabaddi,
+                  label: 'Battle',
+                  selected: _selectedIndex == 2,
+                  onTap: () => _onItemTapped(2),
+                  theme: theme,
+                ),
+                _NavBarItem(
+                  icon: Icons.leaderboard,
+                  label: 'Leaderboard',
+                  selected: _selectedIndex == 3,
+                  onTap: () => _onItemTapped(3),
+                  theme: theme,
+                ),
+                _NavBarItem(
+                  icon: Icons.person,
+                  label: 'Profile',
+                  selected: _selectedIndex == 4,
+                  onTap: () => _onItemTapped(4),
+                  theme: theme,
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.camera_alt_outlined),
-            selectedIcon: Icon(Icons.camera_alt_rounded),
-            label: 'Camera',
+        ),
+      ),
+    );
+  }
+}
+
+class _NavBarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final ThemeData theme;
+  const _NavBarItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+          decoration: BoxDecoration(
+            color: selected
+                ? theme.colorScheme.primary.withOpacity(0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.sports_kabaddi_outlined),
-            selectedIcon: Icon(Icons.sports_kabaddi),
-            label: 'Battle',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: selected ? 32 : 26,
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              const SizedBox(height: 4),
+              if (selected)
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: theme.textTheme.labelLarge!.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontSize: theme.textTheme.labelSmall?.fontSize,
+                  ),
+                  child: Text(label),
+                ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.leaderboard_outlined),
-            selectedIcon: Icon(Icons.leaderboard),
-            label: 'Leaderboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
       ),
     );
   }
