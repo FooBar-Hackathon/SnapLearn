@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:snap_learn_app/Utils.dart';
 import '../services/api_service.dart';
+import 'package:lottie/lottie.dart';
+import 'dart:async';
 
 class BattleScreen extends StatefulWidget {
   const BattleScreen({super.key});
@@ -19,6 +22,18 @@ class _BattleScreenState extends State<BattleScreen> {
   bool _submitting = false;
   Map<String, dynamic>? _result;
   String? _battleId;
+  int _currentIndex = 0;
+  late int _secondsLeft;
+  Timer? _timer;
+  bool _showCheckmark = false;
+  bool _showFireworks = false;
+  bool _showXP = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Optionally: fetch opponents list here for real user selection
+  }
 
   void _startBattle() async {
     setState(() {
@@ -94,10 +109,111 @@ class _BattleScreenState extends State<BattleScreen> {
     }
   }
 
+  void _startQuestionTimer() {
+    _timer?.cancel();
+    _secondsLeft = utils.getTimerForDifficulty(_difficulty ?? 'medium');
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        _secondsLeft--;
+      });
+      if (_secondsLeft <= 0) {
+        _timer?.cancel();
+        _onTimeout();
+      }
+    });
+  }
+
+  void _onTimeout() {
+    if (_answers[_currentIndex] != null) {
+      _goToNextQuestion();
+    } else {
+      setState(() {
+        _answers[_currentIndex] = '';
+      });
+      _goToNextQuestion();
+    }
+  }
+
+  void _goToNextQuestion() {
+    if (_currentIndex < _questions.length - 1) {
+      setState(() {
+        _currentIndex++;
+      });
+      _startQuestionTimer();
+    } else {
+      _showDoneCheckmarkAndSubmit();
+    }
+  }
+
+  void _showDoneCheckmarkAndSubmit() {
+    setState(() {
+      _showCheckmark = true;
+    });
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) _submitBattle();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isWide = MediaQuery.of(context).size.width > 500;
+    if (_showCheckmark) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('1v1 Battle'), centerTitle: true),
+        body: Center(
+          child: Lottie.asset(
+            'assets/animations/done-checkmark.json',
+            width: 120,
+            height: 120,
+            repeat: false,
+          ),
+        ),
+      );
+    }
+    if (_showFireworks) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('1v1 Battle'), centerTitle: true),
+        body: Center(
+          child: Lottie.asset(
+            'assets/animations/fireworks.json',
+            width: 220,
+            height: 220,
+            repeat: false,
+            onLoaded: (c) {
+              Future.delayed(const Duration(seconds: 2), () {
+                setState(() => _showFireworks = false);
+              });
+            },
+          ),
+        ),
+      );
+    }
+    if (_showXP) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('1v1 Battle'), centerTitle: true),
+        body: Center(
+          child: Lottie.asset(
+            'assets/animations/xp_increase.json',
+            width: 120,
+            height: 120,
+            repeat: false,
+            onLoaded: (c) {
+              Future.delayed(const Duration(seconds: 1), () {
+                setState(() => _showXP = false);
+              });
+            },
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('1v1 Battle'), centerTitle: true),
       body: Padding(
@@ -132,24 +248,48 @@ class _BattleScreenState extends State<BattleScreen> {
                 ),
               )
             : _result != null
-            ? _BattleResultView(result: _result!, onRetry: _startBattle)
+            ? _BattleResultView(
+                result: _result!,
+                onRetry: _startBattle,
+                onShowFireworks: () => setState(() => _showFireworks = true),
+                onShowXP: () => setState(() => _showXP = true),
+              )
             : _questions.isEmpty
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Start a new battle!',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Start a new battle!',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.sports_kabaddi),
-                    label: const Text('Start Battle'),
-                    onPressed: _startBattle,
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    // Opponent selection stub
+                    DropdownButton<String>(
+                      value: _opponent,
+                      hint: const Text('Select Opponent'),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'opponent1',
+                          child: Text('Opponent 1'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'opponent2',
+                          child: Text('Opponent 2'),
+                        ),
+                      ],
+                      onChanged: (val) => setState(() => _opponent = val),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.sports_kabaddi),
+                      label: const Text('Start Battle'),
+                      onPressed: _startBattle,
+                    ),
+                  ],
+                ),
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,6 +311,35 @@ class _BattleScreenState extends State<BattleScreen> {
                       Text(
                         'Questions: ${_questions.length}',
                         style: theme.textTheme.bodyMedium,
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            Lottie.asset(
+                              'assets/animations/countdown.json',
+                              width: 28,
+                              height: 28,
+                              repeat: true,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_secondsLeft s',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -239,7 +408,7 @@ class _BattleScreenState extends State<BattleScreen> {
                       onPressed:
                           _submitting || _answers.length != _questions.length
                           ? null
-                          : _submitBattle,
+                          : _showDoneCheckmarkAndSubmit,
                       style: FilledButton.styleFrom(
                         padding: EdgeInsets.symmetric(
                           horizontal: isWide ? 40 : 32,
@@ -262,7 +431,14 @@ class _BattleScreenState extends State<BattleScreen> {
 class _BattleResultView extends StatelessWidget {
   final Map<String, dynamic> result;
   final VoidCallback onRetry;
-  const _BattleResultView({required this.result, required this.onRetry});
+  final VoidCallback? onShowFireworks;
+  final VoidCallback? onShowXP;
+  const _BattleResultView({
+    required this.result,
+    required this.onRetry,
+    this.onShowFireworks,
+    this.onShowXP,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -312,6 +488,13 @@ class _BattleResultView extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Back'),
               ),
+              if (onShowFireworks != null)
+                FilledButton(
+                  onPressed: onShowFireworks,
+                  child: const Text('Show Fireworks'),
+                ),
+              if (onShowXP != null)
+                FilledButton(onPressed: onShowXP, child: const Text('Show XP')),
             ],
           ),
         ),

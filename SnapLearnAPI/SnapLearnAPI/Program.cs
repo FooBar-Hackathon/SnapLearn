@@ -89,3 +89,10 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+// Call your async seeder here
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<SnapLearnDbContext>();
+    await SnapLearnDbContext.SeedDataAsync(seeder);
+}
+

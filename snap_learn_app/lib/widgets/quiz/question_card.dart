@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class QuestionCard extends StatelessWidget {
+class QuestionCard extends StatefulWidget {
   final Map<String, dynamic> question;
   final String? selectedAnswer;
   final Function(String) onAnswerSelected;
@@ -15,10 +15,17 @@ class QuestionCard extends StatelessWidget {
   });
 
   @override
+  State<QuestionCard> createState() => _QuestionCardState();
+}
+
+class _QuestionCardState extends State<QuestionCard> {
+  bool _showHint = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final options = question['options'] as List? ?? [];
-    final points = question['points'] as int? ?? 10;
+    final options = widget.question['options'] as List? ?? [];
+    final points = widget.question['points'] as int? ?? 10;
 
     return Card(
       elevation: 2,
@@ -34,12 +41,12 @@ class QuestionCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withAlpha(25),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
-                      '$questionNumber',
+                      '${widget.questionNumber}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -49,7 +56,7 @@ class QuestionCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    question['question'] as String? ?? '',
+                    widget.question['question'] as String? ?? '',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -61,7 +68,7 @@ class QuestionCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withAlpha(25),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -82,13 +89,13 @@ class QuestionCard extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: OutlinedButton(
-                  onPressed: () => onAnswerSelected(optionLetter),
+                  onPressed: () => widget.onAnswerSelected(optionLetter),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: selectedAnswer == optionLetter
-                        ? theme.colorScheme.primary.withOpacity(0.1)
+                    backgroundColor: widget.selectedAnswer == optionLetter
+                        ? theme.colorScheme.primary.withAlpha(25)
                         : null,
                     side: BorderSide(
-                      color: selectedAnswer == optionLetter
+                      color: widget.selectedAnswer == optionLetter
                           ? theme.colorScheme.primary
                           : theme.colorScheme.outline,
                     ),
@@ -108,34 +115,71 @@ class QuestionCard extends StatelessWidget {
                 ),
               );
             }),
-            if (question['explanation'] != null &&
-                question['explanation'].toString().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        color: theme.colorScheme.secondary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          question['explanation'].toString(),
-                          style: theme.textTheme.bodyMedium,
+            if (widget.question['explanation'] != null &&
+                widget.question['explanation'].toString().isNotEmpty)
+              if (_showHint)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondary.withAlpha(25),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.lightbulb_outline,
+                              color: theme.colorScheme.secondary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.question['explanation'].toString(),
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _showHint = false;
+                              });
+                            },
+                            child: const Text('Hide Hint'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _showHint = true;
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.primary,
                       ),
-                    ],
+                      icon: const Icon(Icons.lightbulb_outline, size: 18),
+                      label: const Text('Show Hint'),
+                    ),
                   ),
                 ),
-              ),
           ],
         ),
       ),

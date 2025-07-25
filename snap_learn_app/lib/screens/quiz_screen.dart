@@ -54,6 +54,7 @@ class _QuizScreenState extends State<QuizScreen> {
     });
     try {
       final data = await ApiService.getFacts(widget.topic, _difficulty!);
+      if (!mounted) return;
       final summary = data['summary'] as String? ?? '';
       final factsList = data['facts'] as List?;
 
@@ -69,10 +70,12 @@ class _QuizScreenState extends State<QuizScreen> {
         _showingFacts = true;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _loading = false;
       });
@@ -90,6 +93,7 @@ class _QuizScreenState extends State<QuizScreen> {
     });
     try {
       final data = await ApiService.generateQuiz(widget.topic, _difficulty!);
+      if (!mounted) return;
       final questionsList = data['questions'] as List?;
       if (questionsList != null) {
         setState(() {
@@ -100,10 +104,12 @@ class _QuizScreenState extends State<QuizScreen> {
         throw Exception('No questions found in response.');
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _loading = false;
       });
@@ -126,14 +132,18 @@ class _QuizScreenState extends State<QuizScreen> {
       });
       if (_quizId == null) throw Exception('Quiz ID missing.');
       final data = await ApiService.submitQuiz(answers, _difficulty!, _quizId!);
+      await ApiService.getProfile(); // If you added this for XP update
+      if (!mounted) return;
       setState(() {
         _result = data;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _submitting = false;
       });

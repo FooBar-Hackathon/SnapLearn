@@ -9,9 +9,9 @@ namespace SnapLearnAPI.Models
         public Guid Id { get; set; }
         [ForeignKey("User")]
         public Guid UserId { get; set; }
-        public string ProfilePicPath { get; set; }
-        public string AiPersonality { get; set; }
-        public string Language { get; set; }
+        public required string ProfilePicPath { get; set; } = "";
+        public required string AiPersonality { get; set; } = "Smart Teacher";
+        public required string Language { get; set; } = "ENG";
         // Navigation property
         public User User { get; set; }
     }

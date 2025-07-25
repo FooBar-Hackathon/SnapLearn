@@ -1,21 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:lottie/lottie.dart';
+import 'dart:async';
 
-class FactsView extends StatelessWidget {
+import 'package:snap_learn_app/utils.dart';
+
+class FactsView extends StatefulWidget {
   final List<String> facts;
   final String summary;
   final String difficulty;
   final VoidCallback onContinue;
+  final int? countdownSeconds;
   const FactsView({
     required this.summary,
     required this.facts,
     required this.difficulty,
     required this.onContinue,
+    this.countdownSeconds,
     super.key,
   });
 
   @override
+  State<FactsView> createState() => _FactsViewState();
+}
+
+class _FactsViewState extends State<FactsView> {
+  late int _secondsLeft;
+  late final Ticker _ticker;
+  bool _autoContinued = false;
+  bool _showCheckmark = false;
+  Timer? _checkmarkTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsLeft =
+        widget.countdownSeconds ??
+        utils.getTimerForDifficulty(widget.difficulty);
+    _ticker = Ticker(_onTick)..start();
+  }
+
+  void _onTick(Duration elapsed) {
+    if (!mounted) return;
+    if (_secondsLeft > 0) {
+      setState(() {
+        _secondsLeft =
+            (widget.countdownSeconds ??
+                utils.getTimerForDifficulty(widget.difficulty)) -
+            elapsed.inSeconds;
+      });
+      if (_secondsLeft <= 0 && !_autoContinued) {
+        _autoContinued = true;
+        _showDoneCheckmarkAndContinue();
+      }
+    }
+  }
+
+  void _showDoneCheckmarkAndContinue() {
+    setState(() {
+      _showCheckmark = true;
+    });
+    _checkmarkTimer = Timer(const Duration(seconds: 1), () {
+      if (mounted) widget.onContinue();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    _checkmarkTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (_showCheckmark) {
+      return Center(
+        child: Lottie.asset(
+          'assets/animations/done-checkmark.json',
+          width: 120,
+          height: 120,
+          repeat: false,
+        ),
+      );
+    }
     return Column(
       children: [
         Padding(
@@ -23,11 +92,40 @@ class FactsView extends StatelessWidget {
           child: Row(
             children: [
               Chip(
-                label: Text(difficulty),
+                label: Text(widget.difficulty),
                 backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
               ),
               const SizedBox(width: 8),
               Text('Learn these facts first', style: theme.textTheme.bodyLarge),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Lottie.asset(
+                      'assets/animations/countdown.json',
+                      width: 32,
+                      height: 32,
+                      repeat: true,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$_secondsLeft s',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -57,13 +155,13 @@ class FactsView extends StatelessWidget {
                 const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 8),
-                Text(summary, style: theme.textTheme.bodyLarge),
+                Text(widget.summary, style: theme.textTheme.bodyLarge),
               ],
             ),
           ),
         ),
         Expanded(
-          child: facts.isEmpty
+          child: widget.facts.isEmpty
               ? Center(
                   child: Text(
                     'No facts available',
@@ -72,7 +170,7 @@ class FactsView extends StatelessWidget {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: facts.length,
+                  itemCount: widget.facts.length,
                   itemBuilder: (context, index) => Card(
                     elevation: 1,
                     margin: const EdgeInsets.only(bottom: 16),
@@ -90,7 +188,7 @@ class FactsView extends StatelessWidget {
                             ),
                             child: Center(
                               child: Text(
-                                '${index + 1}',
+                                ' 2${index + 1}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -100,9 +198,9 @@ class FactsView extends StatelessWidget {
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
-                              facts[index]
+                              widget.facts[index]
                                   .replaceAll(RegExp(r'["\\]'), '')
-                                  .replaceAll(RegExp(r',$'), ''),
+                                  .replaceAll(RegExp(r',\$'), ''),
                               style: theme.textTheme.bodyLarge,
                             ),
                           ),
@@ -115,7 +213,7 @@ class FactsView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(16),
           child: FilledButton(
-            onPressed: onContinue,
+            onPressed: widget.onContinue,
             child: const Text('Start Quiz'),
           ),
         ),

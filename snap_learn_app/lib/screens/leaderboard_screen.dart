@@ -207,7 +207,7 @@ class _SimpleLeaderboardCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.symmetric(horizontal: isWide ? 64 : 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: isTop3 ? 4 : 1,
+      elevation: isTop3 ? 3 : 1,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isTop3

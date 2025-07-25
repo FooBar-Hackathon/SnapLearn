@@ -33,7 +33,7 @@ namespace SnapLearnAPI.Services
 
         public async Task<FactResponse> GenerateFactsAsync(string topic, string difficulty, string language = "en")
         {
-            var prompt = $"Topic: {topic} (mouse = Computer Mouse), generate a learning prompt or quiz question for a student. Also provide a brief summary and 3 fun facts. Difficulty: {difficulty} Respond in JSON: {{ \"summary\": \"...\", \"facts\": [\"...\", \"...\", \"...\"], \"language\": \"{language}\" }}";
+            var prompt = $"Topic: {topic} (if mouse = Computer Mouse if not ignore), generate a learning prompt or quiz question for a student. Also provide a brief summary and 3 fun facts. Difficulty: {difficulty} Respond in JSON: {{ \"summary\": \"...\", \"facts\": [\"...\", \"...\", \"...\"], \"language\": \"{language}\" }}";
             var geminiResponse = await _geminiService.GenerateJsonContent(prompt);
 
             try
@@ -121,7 +121,7 @@ namespace SnapLearnAPI.Services
         }
         public async Task<QuizResponse> GenerateQuizAsync(QuizGenerationRequest request)
         {
-            var prompt = $"Generate a quiz with {request.QuestionCount} questions about \"{request.Topic} (mouse = Computer Mouse)\". " +
+            var prompt = $"Generate a quiz with {request.QuestionCount} questions about \"{request.Topic} (if mouse = Computer Mouse if not ignore)\". " +
                          $"Difficulty: {request.Difficulty}. " +
                          $"Language: {request.Language ?? "en"}. " +
                          "Respond ONLY with a JSON array of objects, each with: " +

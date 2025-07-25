@@ -97,6 +97,15 @@ namespace SnapLearnAPI.Controllers
                 if (user != null)
                 {
                     user.Exp += result.XP + result.Bonus;
+                    // Level-up logic
+                    int nextLevel = user.Level + 1;
+                    float requiredXp = 100f * (float)Math.Pow(3, user.Level);
+                    while (user.Exp >= requiredXp)
+                    {
+                        user.Level++;
+                        nextLevel = user.Level + 1;
+                        requiredXp = 100f * (float)Math.Pow(3, user.Level);
+                    }
                     await _db.SaveChangesAsync();
                 }
 

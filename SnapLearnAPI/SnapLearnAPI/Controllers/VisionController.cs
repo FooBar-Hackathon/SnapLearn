@@ -43,8 +43,29 @@ namespace SnapLearnAPI.Controllers
             using var stream = file.OpenReadStream();
             var text = await _visionService.ExtractTextAsync(stream, language);
             if (string.IsNullOrWhiteSpace(text))
-                return Ok(new { text = "", message = "No text found." });
-            return Ok(new { text });
+                return Ok(new { text = "", summary = "", message = "No text found." });
+
+            string summary = "";
+            try
+            {
+                // Use AIService to summarize the text for a title/description
+                string prompt = $"Summarize the following text into a short, human-friendly title or description.\nText: {text}\nSummary:";
+                summary = await _aiService.GeneratePromptAsync(null, prompt);
+                if (!string.IsNullOrWhiteSpace(summary))
+                {
+                    // Clean up summary if needed
+                    summary = summary.Trim().Replace("\n", " ");
+                }
+            }
+            catch
+            {
+                // Fallback: use first line or first 10 words
+                var words = text.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                summary = string.Join(" ", words.Take(10));
+                if (text.Contains('\n'))
+                    summary = text.Split('\n')[0];
+            }
+            return Ok(new { text, summary });
         }
 
  

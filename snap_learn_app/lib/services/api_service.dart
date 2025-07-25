@@ -4,8 +4,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  static const String baseUrl =
-      'https://b44c85d61e51.ngrok-free.app/api'; // Change to your backend URL
+  static const String baseUrl = 'https://b44c85d61e51.ngrok-free.app/api';
 
   static Future<Map<String, dynamic>> login(
     String email,
@@ -237,6 +236,32 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>?> getProfile() async {
+    final storage = const FlutterSecureStorage();
+    final token = await storage.read(key: 'token');
+    if (token == null || token.isEmpty) return null;
+    final url = Uri.parse('$baseUrl/Profile');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      try {
+        final data = jsonDecode(response.body);
+        await storage.write(key: 'profile', value: jsonEncode(data));
+        return Map<String, dynamic>.from(data);
+      } catch (e) {
+        print('Non-JSON profile response: ${response.body}');
+        return null;
+      }
+    }
+    print('Profile fetch failed: ${response.body}');
+    return null;
+  }
+
   static Future<Map<String, dynamic>> submitQuiz(
     List<Map<String, String>> answers,
     String difficulty,
@@ -439,32 +464,6 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>?> getProfile() async {
-    final storage = const FlutterSecureStorage();
-    final token = await storage.read(key: 'token');
-    if (token == null || token.isEmpty) return null;
-    final url = Uri.parse('$baseUrl/Profile');
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-    if (response.statusCode == 200) {
-      try {
-        final data = jsonDecode(response.body);
-        await storeProfile(data);
-        return Map<String, dynamic>.from(data);
-      } catch (e) {
-        print('Non-JSON profile response: ${response.body}');
-        return null;
-      }
-    }
-    print('Profile fetch failed: ${response.body}');
-    return null;
-  }
-
   static Future<void> updateProfile({
     required String userName,
     required String language,
@@ -490,5 +489,29 @@ class ApiService {
       print('Profile update failed: ${response.body}');
       throw Exception('Failed to update profile');
     }
+  }
+
+  static Future<Map<String, dynamic>?> getDashboardSummary() async {
+    final storage = const FlutterSecureStorage();
+    final token = await storage.read(key: 'token');
+    if (token == null || token.isEmpty) return null;
+    final url = Uri.parse('$baseUrl/Profile/summary');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      try {
+        return Map<String, dynamic>.from(jsonDecode(response.body));
+      } catch (e) {
+        print('Non-JSON dashboard summary response: ${response.body}');
+        return null;
+      }
+    }
+    print('Dashboard summary fetch failed: ${response.body}');
+    return null;
   }
 }
